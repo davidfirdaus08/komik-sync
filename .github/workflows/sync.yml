@@ -1,4 +1,4 @@
-name: Sync Komik
+name: Sync InfinityFree
 
 on:
   schedule:
@@ -11,10 +11,10 @@ jobs:
     steps:
       - name: Push Counts to GitHub
         run: |
-          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=david0101&push_counts=1")
+          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=${{ secrets.INF_SECRET }}&push_counts=1")
           echo "Push Counts Response: $RESPONSE"
           
       - name: Trigger Pull Data
         run: |
-          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=david0101&trigger_pull=1")
+          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=${{ secrets.INF_SECRET }}&trigger_pull=1")
           echo "Pull Data Response: $RESPONSE"
