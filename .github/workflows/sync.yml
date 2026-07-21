@@ -2,19 +2,45 @@ name: Sync Komik
 
 on:
   schedule:
-    - cron: "*/15 * * * *" # Jalankan setiap 15 menit
-  workflow_dispatch: # Bisa dijalankan manual dari tab Actions
+    - cron: "*/15 * * * *" # Setiap 15 menit
+  workflow_dispatch:
 
 jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Push Counts to GitHub
+      - name: Trigger InfinityFree Sync
         run: |
-          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=${{ secrets.INF_SECRET }}&push_counts=1")
-          echo "Push Counts Response: $RESPONSE"
+          # 1. Ambil halaman awal untuk dapat JS Challenge & Cookie
+          INITIAL_RESP=$(curl -s -i "https://v1dflinks.gt.tc/api_receiver.php?secret=${{ secrets.INF_SECRET }}")
+          COOKIE_JAR=$(mktemp)
           
-      - name: Trigger Pull Data
-        run: |
-          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=${{ secrets.INF_SECRET }}&trigger_pull=1")
-          echo "Pull Data Response: $RESPONSE"
+          # Ekstrak cookie dari header
+          echo "$INITIAL_RESP" | grep -i 'set-cookie' | sed 's/Set-Cookie: //I' > $COOKIE_JAR
+          
+          # Cek apakah ada JS Challenge (toNumbers)
+          if echo "$INITIAL_RESP" | grep -q "toNumbers"; then
+            # Ekstrak variabel a, b, c
+            A=$(echo "$INITIAL_RESP" | grep -oP 'toNumbers\("\K[^"]+' | sed -n '1p')
+            B=$(echo "$INITIAL_RESP" | grep -oP 'toNumbers\("\K[^"]+' | sed -n '2p')
+            C=$(echo "$INITIAL_RESP" | grep -oP 'toNumbers\("\K[^"]+' | sed -n '3p')
+            
+            # Solve AES Decrypt menggunakan Python
+            DECRYPTED=$(python3 -c "
+          import binascii
+          from Crypto.Cipher import AES
+          a = binascii.unhexlify('$A')
+          b = binascii.unhexlify('$B')
+          c = binascii.unhexlify('$C')
+          cipher = AES.new(a, AES.MODE_CBC, b)
+          print(binascii.hexlify(cipher.decrypt(c)).decode())
+          ")
+            
+            # Update cookie file dengan __test
+            echo "__test=$DECRYPTED" >> $COOKIE_JAR
+          fi
+          
+          # 2. Eksekusi URL asli dengan cookie yang sudah diselesaikan
+          SYNC_RESP=$(curl -s -b $COOKIE_JAR -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" "https://v1dflinks.gt.tc/api_receiver.php?secret=${{ secrets.INF_SECRET }}")
+          
+          echo "Sync Response: $SYNC_RESP"
