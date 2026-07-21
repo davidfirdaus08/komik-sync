@@ -9,7 +9,7 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger InfinityFree Sync
+      - name: Trigger Komik Sync
         run: |
           # 1. Ambil halaman awal untuk dapat JS Challenge & Cookie
           INITIAL_RESP=$(curl -s -i "https://v1dflinks.gt.tc/api_receiver.php?secret=${{ secrets.INF_SECRET }}")
