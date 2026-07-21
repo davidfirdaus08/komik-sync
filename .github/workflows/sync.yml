@@ -1,0 +1,20 @@
+name: Sync Komik
+
+on:
+  schedule:
+    - cron: "*/15 * * * *" # Jalankan setiap 15 menit
+  workflow_dispatch: # Bisa dijalankan manual dari tab Actions
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Push Counts to GitHub
+        run: |
+          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=david0101&push_counts=1")
+          echo "Push Counts Response: $RESPONSE"
+          
+      - name: Trigger Pull Data
+        run: |
+          RESPONSE=$(curl -s "https://v1dflinks.gt.tc/api_receiver.php?secret=david0101&trigger_pull=1")
+          echo "Pull Data Response: $RESPONSE"
